@@ -5,9 +5,9 @@
 
 [node name="try1" type="Spatial"]
 
+[node name="ARSession" type="Node" parent="."]
+script = ExtResource( 2 )
+
 [node name="ARMarkerSpawner" type="Spatial" parent="."]
 script = ExtResource( 1 )
 session_node = NodePath("../ARSession")
-
-[node name="ARSession" type="Node" parent="."]
-script = ExtResource( 2 )

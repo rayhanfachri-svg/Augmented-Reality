@@ -33,6 +33,8 @@ private:
     Ref<Image> gd_frame;
     ImageTargetDB db;
     cv::Ptr<cv::ORB> orb;
+    // Dibuat NORM_HAMMING di constructor: deskriptor ORB itu biner (CV_8U),
+    // BFMatcher default L2 tidak bisa dipakai untuk data biner.
     cv::BFMatcher matcher;
     cv::Mat camera_matrix;
     cv::Mat dist_coeffs;

@@ -46,6 +46,8 @@ int ImageTargetDB::addTarget(const std::string &png_path,
     e.image_path = png_path;
     e.width_m = width_m;
     e.height_m = width_m * ((double)proc.rows / (double)proc.cols);
+    e.proc_w = proc.cols;
+    e.proc_h = proc.rows;
     e.keypoints = kps;
     e.descriptors = desc;
     // ganti bila nama sama
@@ -69,6 +71,8 @@ bool ImageTargetDB::saveYml(const std::string &path) {
         fs << "image_path" << targets[i].image_path;
         fs << "width_m" << targets[i].width_m;
         fs << "height_m" << targets[i].height_m;
+        fs << "proc_w" << targets[i].proc_w;
+        fs << "proc_h" << targets[i].proc_h;
         fs << "keypoints" << targets[i].keypoints;
         fs << "descriptors" << targets[i].descriptors;
         fs << "}";
@@ -91,6 +95,18 @@ bool ImageTargetDB::loadYml(const std::string &path) {
         e.image_path = (std::string)n["image_path"];
         n["width_m"] >> e.width_m;
         n["height_m"] >> e.height_m;
+        n["proc_w"] >> e.proc_w;
+        n["proc_h"] >> e.proc_h;
+        // YML lama tidak punya proc_w/proc_h -> hitung ulang dari file gambar
+        // supaya koordinat 4 sudut target benar saat homography.
+        if (e.proc_w <= 0 || e.proc_h <= 0) {
+            cv::Mat g = loadGray(e.image_path);
+            if (!g.empty()) {
+                cv::Mat p = preprocess(g);
+                e.proc_w = p.cols;
+                e.proc_h = p.rows;
+            }
+        }
         cv::read(n["keypoints"], e.keypoints);
         n["descriptors"] >> e.descriptors;
         targets.push_back(e);

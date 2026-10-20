@@ -135,7 +135,13 @@ func start() -> bool:
 	if resource == null or not (resource is NativeScript):
 		_set_status("Resource image gagal dimuat: " + GDNS_IMAGE_PATH)
 		return false
-	_worker = (resource as NativeScript).new()
+	var gdns := resource as NativeScript
+	# Kalau .so gagal load (undefined symbol), library tidak ter-init dan
+	# NativeScript tidak bisa di-instance -> new() akan crash.
+	if not gdns.can_instance():
+		_set_status("GDNative image gagal ter-init (cek .so / undefined symbol): " + GDNS_IMAGE_PATH)
+		return false
+	_worker = gdns.new()
 	if _worker == null:
 		_set_status("Gagal membuat worker GDImageDetector.")
 		return false

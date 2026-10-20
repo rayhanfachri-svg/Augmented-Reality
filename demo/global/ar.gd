@@ -38,6 +38,7 @@ var last_ids: Array = []
 var last_translations: Array = []
 var last_rotations: Array = []
 var last_seen_msec: int = 0
+var _initialized: bool = false  # true bila _video_tex + kamera sudah disiapkan
 
 var _worker: Node = null  # GDOpenCVExample (Sprite) buatan C++
 var _was_empty: bool = true
@@ -47,13 +48,25 @@ var _video_quad: MeshInstance
 
 
 func _ready() -> void:
-	_video_tex = ImageTexture.new()
-	_ensure_camera()
+	_ensure_initialized()
 	if auto_start:
 		start()
 
 
 # --- Node pendukung AR (dibuat sendiri, tidak perlu setup manual) ----------
+# Idempoten + aman dipanggil sebelum _ready (kasus try1.tscn: Spawner _ready
+# duluan lalu memanggil session.start()). Dipakai juga oleh ARMarkerSpawner.
+func ensure_ready() -> void:
+	_ensure_initialized()
+
+
+func _ensure_initialized() -> void:
+	if _video_tex == null:
+		_video_tex = ImageTexture.new()
+	_ensure_camera()
+	_initialized = true
+
+
 func _ensure_camera() -> void:
 	_camera = _find_camera()
 	if _camera == null and auto_create_camera:
@@ -68,9 +81,11 @@ func _ensure_camera() -> void:
 
 
 func _find_camera() -> Camera:
+	if not is_inside_tree():
+		return _camera
 	var root := get_tree().current_scene
 	if root == null:
-		return null
+		return _camera
 	return _find_camera_recursive(root)
 
 
@@ -138,6 +153,7 @@ func get_video_quad() -> MeshInstance:
 
 # --- Kontrol kamera -------------------------------------------------------
 func start() -> bool:
+	_ensure_initialized()
 	if _worker != null and is_instance_valid(_worker):
 		return true
 	if not ResourceLoader.exists(GDNS_PATH):
@@ -149,6 +165,15 @@ func start() -> bool:
 		return false
 
 	var gdns: NativeScript = resource as NativeScript
+	if gdns == null:
+		_set_status("Resource GDNative gagal dimuat atau bukan NativeScript: " + GDNS_PATH)
+		return false
+	# PENTING: cek null SEBELUM panggil new(). Kalau .so gagal load (mis.
+	# undefined symbol), NativeScript-nya null dan pemanggilan new() memunculkan
+	# "Attempt to call function 'new' in base 'NativeScript' on a null instance".
+	if not gdns.can_instance():
+		_set_status("GDNative gagal ter-init (cek .so / undefined symbol): " + GDNS_PATH)
+		return false
 	_worker = gdns.new()
 	if _worker == null:
 		_set_status("Gagal membuat instance worker GDNative.")
@@ -222,6 +247,8 @@ func _apply_config() -> void:
 
 # --- Sinyal dari worker -> cache + re-emit --------------------------------
 func _on_worker_frame(_node, image) -> void:
+	if _video_tex == null:
+		_video_tex = ImageTexture.new()
 	if image != null:
 		_video_tex.create_from_image(image)
 		if video_enabled:

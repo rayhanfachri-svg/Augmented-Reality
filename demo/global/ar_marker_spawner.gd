@@ -41,10 +41,36 @@ var _spawned := {}
 func _ready() -> void:
 	_find_or_create_session()
 	if _session == null:
+		# Sesi mungkin belum masuk tree (urutan _ready terbalik di try1.tscn:
+		# Spawner duluan). Coba lagi deferred setelah semua _ready selesai.
+		call_deferred("_deferred_bind")
+		return
+	_bind_session()
+
+
+func _deferred_bind() -> void:
+	if _session != null and is_instance_valid(_session):
+		_bind_session()
+		return
+	_find_or_create_session()
+	if _session == null:
 		push_warning("[ARSpawner] Tidak ada ARSession di scene. Set `auto_create_session` atau taruh node ARSession.")
 		return
-	_session.connect("marker_detected", self, "_on_markers")
-	_session.connect("status_changed", self, "_on_status")
+	_bind_session()
+
+
+func _bind_session() -> void:
+	if _session == null or not is_instance_valid(_session):
+		return
+	if _session.has_method("ensure_ready"):
+		_session.ensure_ready()
+	if not _session.is_connected("marker_detected", self, "_on_markers"):
+		_session.connect("marker_detected", self, "_on_markers")
+	if not _session.is_connected("status_changed", self, "_on_status"):
+		_session.connect("status_changed", self, "_on_status")
+	# Jangan start ganda: bila sesi sudah auto_start, cukup pastikan jalan.
+	# Aman walau Spawner _ready duluan karena ARSession.start() kini idempoten
+	# + inisialisasi malas (lihat ARSession.ensure_ready()).
 	if not _session.is_running():
 		_session.start()
 	_set_status("Menunggu marker DICT_4X4_50...")
@@ -58,7 +84,22 @@ func _find_or_create_session() -> void:
 			return
 		push_warning("[ARSpawner] `session_node` bukan ARSession, cari otomatis.")
 	# Cari sesi yg sudah ada di scene.
-	var existing := _find_session_recursive(get_tree().current_scene)
+	var root: Node = null
+	if is_inside_tree():
+		root = get_tree().current_scene
+	var existing: ARSession = null
+	if root != null:
+		existing = _find_session_recursive(root)
+	if existing == null and session_node != NodePath(""):
+		# Sibling (mis. ../ARSession di try1.tscn) mungkin belum _ready, tapi
+		# node-nya sudah ada di tree — get_node_or_null sudah dicoba di atas,
+		# jadi di sini hanya fallback cari di parent langsung.
+		var parent := get_parent()
+		if parent != null:
+			for c in parent.get_children():
+				if c is ARSession:
+					existing = c
+					break
 	if existing != null:
 		_session = existing
 		return
@@ -70,6 +111,8 @@ func _find_or_create_session() -> void:
 
 
 func _find_session_recursive(n: Node) -> ARSession:
+	if n == null:
+		return null
 	if n is ARSession:
 		return n as ARSession
 	for c in n.get_children():

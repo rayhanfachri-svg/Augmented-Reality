@@ -13,6 +13,12 @@ struct ImageTargetEntry {
     std::string image_path;
     float width_m = 0.20f;
     float height_m = 0.20f;
+    // Ukuran (px) gambar target SETELAH preprocess (equalizeHist+blur+resize).
+    // WAJIB disimpan: homography H memetakan ruang target-proses -> ruang
+    // frame-proses, jadi koordinat 4 sudut target harus memakai ukuran ini
+    // (bukan angka hardcode).
+    int proc_w = 0;
+    int proc_h = 0;
     std::vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
 };

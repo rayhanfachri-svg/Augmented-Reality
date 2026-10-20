@@ -47,6 +47,8 @@ void GDImageDetector::_init() {
     calib_w = 0;
     calib_h = 0;
     frame_counter = 0;
+    // WAJIB: cv::Ptr default = null -> orb->detectAndCompute() = crash.
+    orb = cv::ORB::create(750, 1.2f, 8);
 }
 
 
@@ -73,9 +75,16 @@ void GDImageDetector::_process(float delta) {
                     cv::resize(gray, gray, cv::Size(downscale_width, int(gray.rows * s)));
                     sy0 = sx0;
                 }
+                // WAJIB sama persis dengan ImageTargetDB::preprocess():
+                // target dideskripsikan dari equalizeHist+blur, jadi frame juga
+                // harus diproses sama supaya deskriptor ORB-nya sebanding.
+                cv::Mat eq;
+                cv::equalizeHist(gray, eq);
+                cv::Mat blur;
+                cv::GaussianBlur(eq, blur, cv::Size(3, 3), 0.5);
                 std::vector<cv::KeyPoint> kps;
                 cv::Mat desc;
-                orb->detectAndCompute(gray, cv::noArray(), kps, desc);
+                orb->detectAndCompute(blur, cv::noArray(), kps, desc);
                 if (!desc.empty()) {
                     for (const auto &t : db.getTargets()) {
                         if (t.descriptors.empty()) continue;
@@ -101,20 +110,39 @@ void GDImageDetector::_process(float delta) {
                         float hh = t.height_m * 0.5f;
                         std::vector<cv::Point3f> o3 = {
                             {-hw, -hh, 0}, {hw, -hh, 0}, {hw, hh, 0}, {-hw, hh, 0}};
+                        // BUG FIX: 4 sudut target harus memakai ukuran target
+                        // SESUNGGUHNYA (px setelah preprocess), bukan 320x240
+                        // hardcode. H memetakan ruang target-proses -> frame-proses.
+                        int tw = t.proc_w > 0 ? t.proc_w : 320;
+                        int th = t.proc_h > 0 ? t.proc_h : 240;
                         std::vector<cv::Point2f> tc = {
-                            {0.f, 0.f}, {320.f, 0.f}, {320.f, 240.f}, {0.f, 240.f}};
+                            {0.f, 0.f},
+                            {(float)tw, 0.f},
+                            {(float)tw, (float)th},
+                            {0.f, (float)th}};
                         std::vector<cv::Point2f> fc;
                         cv::perspectiveTransform(tc, fc, H);
+                        // BUG FIX: fc berada di ruang frame-DOWNSCALE, sedangkan
+                        // camera_matrix disusun untuk frame ASLI -> harus
+                        // dikembalikan ke ruang frame asli sebelum solvePnP,
+                        // kalau tidak kedalaman (Z) jadi ngawur.
+                        std::vector<cv::Point2f> fc_full;
+                        fc_full.reserve(fc.size());
+                        for (const auto &p : fc)
+                            fc_full.push_back(cv::Point2f(
+                                (float)(p.x * sx0), (float)(p.y * sy0)));
                         cv::Vec3d rvec, tvec;
-                        if (!cv::solvePnP(o3, fc, camera_matrix, dist_coeffs, rvec, tvec))
+                        if (!cv::solvePnP(o3, fc_full, camera_matrix, dist_coeffs, rvec, tvec))
                             continue;
                         last_names.push_back(t.name);
                         last_rvecs.push_back(rvec);
                         last_tvecs.push_back(tvec);
                         if (show_processed && !output.empty()) {
+                            // Gambar polyline di ruang frame ASLI (output = frame.clone(),
+                            // bukan frame downscale) -> pakai fc_full.
                             std::vector<std::vector<cv::Point>> poly(1);
-                            for (auto &p : fc)
-                                poly[0].push_back(cv::Point(int(p.x * sx0), int(p.y * sy0)));
+                            for (auto &p : fc_full)
+                                poly[0].push_back(cv::Point(int(p.x), int(p.y)));
                             cv::polylines(output, poly, true, cv::Scalar(0, 255, 0), 2);
                         }
                     }
@@ -136,6 +164,10 @@ void GDImageDetector::ensure_camera_matrix(int w, int h) {
     if (w == calib_w && h == calib_h && !camera_matrix.empty()) return;
     double fx = 0.9 * (double)w;
     camera_matrix = (cv::Mat_<double>(3, 3) << fx, 0, w * 0.5, 0, fx, h * 0.5, 0, 0, 1);
+    // WAJIB: dist_coeffs harus Mat valid. cv::Mat kosong (default) bikin
+    // solvePnP gagal/hasil ngawur. Tidak ada kalibrasi -> asumsi nol distorsi.
+    if (dist_coeffs.empty() || dist_coeffs.rows != 5)
+        dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
     calib_w = w;
     calib_h = h;
 }
@@ -173,6 +205,38 @@ bool GDImageDetector::load_target(String path, String name, float width_m) {
 
 void GDImageDetector::clear_db() { db.clear(); }
 int GDImageDetector::target_count() { return (int)db.size(); }
+
+// Emit sinyal image_detected (node, names, translations, rotations).
+// WAJIB ada: tanpa definisi ini simbolnya undefined di .so -> dlopen gagal
+// -> GDNative tidak bisa dimuat -> error "undefined symbol" saat runtime.
+void GDImageDetector::emit_image_signal() {
+    Array names;
+    Array trans;
+    Array rots;
+
+    for (size_t i = 0; i < last_names.size(); ++i) {
+        names.push_back(String(last_names[i].c_str()));
+        // Selalu push ke ketiga array supaya panjangnya sama dengan
+        // `names` (consumer memindai indeks).
+        if (i < last_tvecs.size()) {
+            const cv::Vec3d &t = last_tvecs[i];
+            trans.push_back(Vector3(t[0], t[1], t[2]));
+        } else {
+            trans.push_back(Vector3());
+        }
+        if (i < last_rvecs.size()) {
+            const cv::Vec3d &r = last_rvecs[i];
+            rots.push_back(Vector3(r[0], r[1], r[2]));
+        } else {
+            rots.push_back(Vector3());
+        }
+    }
+
+    // Selalu emit tiap frame (array kosong = target hilang), sama pola
+    // emit_marker_signal() di GDOpenCVExample supaya consumer bisa
+    // menghitung grace-frames sendiri.
+    emit_signal("image_detected", this, names, trans, rots);
+}
 
 Ref<Image> GDImageDetector::cvMat_to_Image() {
     cv::Mat cv_rgb;
