@@ -60,6 +60,20 @@ int ImageTargetDB::addTarget(const std::string &png_path,
 
 void ImageTargetDB::clear() { targets.clear(); }
 
+// Fase 2 (S1-Input-File): pipeline IDENTIK dgn addTarget (loadGray ->
+// preprocess -> orb detectAndCompute dgn nfeatures yg sama), tapi TANPA
+// threshold tolak dan TANPA push ke targets. Dipakai UI utk menampilkan
+// angka ORB asli sebelum user menekan Simpan.
+int ImageTargetDB::probeKeypoints(const std::string &path, std::string &err) {
+    cv::Mat gray = loadGray(path);
+    if (gray.empty()) { err = "gagal baca: " + path; return -1; }
+    cv::Mat proc = preprocess(gray);
+    std::vector<cv::KeyPoint> kps;
+    cv::Mat desc;
+    orb->detectAndCompute(proc, cv::noArray(), kps, desc);
+    return (int)kps.size();
+}
+
 bool ImageTargetDB::saveYml(const std::string &path) {
     cv::FileStorage fs(path, cv::FileStorage::WRITE);
     if (!fs.isOpened()) return false;

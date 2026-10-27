@@ -38,6 +38,9 @@ public:
     // return keypoint count, atau <0 + err bila gagal
     int addTarget(const std::string &png_path, const std::string &name,
                   float width_m, std::string &err);
+    // Hitung keypoint ORB TANPA masuk DB (read-only, utk validasi UI S1).
+    // Return >= 0 = jumlah kp (walau < ambang), <0 + err bila file gagal dibaca.
+    int probeKeypoints(const std::string &path, std::string &err);
     void clear();
     size_t size() const { return targets.size(); }
     const std::vector<ImageTargetEntry> &getTargets() const { return targets; }

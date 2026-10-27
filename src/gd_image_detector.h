@@ -78,6 +78,9 @@ public:
     bool load_target(String path, String name, float width_m);
     void clear_db();
     int target_count();
+    // Fase 2 (S1): hitung kp ORB asli TANPA masuk DB. Return >= 0 = jumlah kp,
+    // -1 = file gagal dibaca. Read-only; aman dipanggil kapan pun.
+    int probe_keypoints(String path);
 };
 
 }

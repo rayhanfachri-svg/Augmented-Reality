@@ -14,6 +14,7 @@ void GDImageDetector::_register_methods() {
     register_method("set_detect_every_n_frames", &GDImageDetector::set_detect_every_n_frames);
     register_method("set_min_inliers", &GDImageDetector::set_min_inliers);
     register_method("set_match_ratio", &GDImageDetector::set_match_ratio);
+    register_method("probe_keypoints", &GDImageDetector::probe_keypoints);
     register_property<GDImageDetector, int>("camera_id", &GDImageDetector::set_camera_id, &GDImageDetector::get_camera_id, 0);
     register_property<GDImageDetector, bool>("show_processed", &GDImageDetector::set_show_processed, &GDImageDetector::get_show_processed, false);
     register_property<GDImageDetector, int>("width", &GDImageDetector::width, 640);
@@ -205,6 +206,21 @@ bool GDImageDetector::load_target(String path, String name, float width_m) {
 
 void GDImageDetector::clear_db() { db.clear(); }
 int GDImageDetector::target_count() { return (int)db.size(); }
+
+// Fase 2 (S1-Input-File): expose hitungan ORB asli ke GDScript TANPA masuk DB
+// dan TANPA butuh kamera jalan (tidak menyentuh cap/frame/_process).
+// Dipakai ARImageLibrary.add_target() sbg validator utama; fallback Laplacian
+// GDScript hanya bila .so lama (method belum ada -> has_method false).
+int GDImageDetector::probe_keypoints(String path) {
+    std::string err;
+    String abs = ProjectSettings::get_singleton()->globalize_path(path);
+    int kp = db.probeKeypoints(std::string(abs.utf8().get_data()), err);
+    if (kp < 0) {
+        Godot::print(String("[IMG] probe_keypoints gagal: ") + String(err.c_str()));
+        return -1;
+    }
+    return kp;
+}
 
 // Emit sinyal image_detected (node, names, translations, rotations).
 // WAJIB ada: tanpa definisi ini simbolnya undefined di .so -> dlopen gagal
