@@ -32,6 +32,10 @@ export var auto_create_camera: bool = true  # buat Camera sendiri bila scene tak
 export var video_enabled: bool = true  # gambar frame kamera sebagai background 3D
 export var video_distance: float = 1.0  # jarak quad video di depan kamera (meter)
 export var status_label_path: NodePath  # opsional; kosong = status hanya via sinyal
+# Overlay visual OpenCV (border persegi + ID marker + sumbu XYZ).
+# SEPARAT dari deteksi: matikan agar frame bersih sementara model 3D tetap
+# muncul & bergerak sesuai pose marker. Default false agar produksi bersih.
+export var debug_overlay: bool = false
 
 # Cache hasil frame terakhir (siap dibaca kapan pun via getter).
 var last_ids: Array = []
@@ -227,6 +231,12 @@ func set_show_processed(v: bool) -> void:
 		_worker.set("show_processed", v)
 
 
+func set_debug_overlay(v: bool) -> void:
+	debug_overlay = v
+	if is_running():
+		_worker.set("draw_debug", v)
+
+
 func set_marker_length(meters: float) -> void:
 	if meters <= 0.0:
 		return
@@ -240,6 +250,7 @@ func _apply_config() -> void:
 	_worker.set("width", capture_width)
 	_worker.set("height", capture_height)
 	_worker.set("show_processed", show_processed)
+	_worker.set("draw_debug", debug_overlay)
 	if _worker.has_method("set_marker_length"):
 		_worker.call("set_marker_length", marker_length)
 	_worker.visible = false

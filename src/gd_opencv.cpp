@@ -13,6 +13,7 @@ void GDOpenCVExample::_register_methods()
     register_method("set_marker_length", &GDOpenCVExample::set_marker_length);
     register_property<GDOpenCVExample, int>("camera_id", &GDOpenCVExample::set_camera_id, &GDOpenCVExample::get_camera_id, 0);
     register_property<GDOpenCVExample, bool>("show_processed", &GDOpenCVExample::set_show_processed, &GDOpenCVExample::get_show_processed, false);
+    register_property<GDOpenCVExample, bool>("draw_debug", &GDOpenCVExample::set_draw_debug, &GDOpenCVExample::get_draw_debug, false);
     register_property<GDOpenCVExample, int>("width", &GDOpenCVExample::width, 640);
     register_property<GDOpenCVExample, int>("height", &GDOpenCVExample::height, 480);
     register_property<GDOpenCVExample, float>("marker_length", &GDOpenCVExample::set_marker_length, &GDOpenCVExample::get_marker_length, 0.05f);
@@ -56,12 +57,14 @@ void GDOpenCVExample::_init()
 {
     camera_id              = 0;
     show_processed         = false;
+    draw_debug             = false;
     marker_length          = 0.05f;
     cap                    = NULL;
     width                  = 640;
     height                 = 480;
     own_opencv_code_object = new OpenCVProcessing();
     own_opencv_code_object->set_marker_length(marker_length);
+    own_opencv_code_object->set_draw_debug(draw_debug);
 }
 
 
@@ -77,7 +80,7 @@ void GDOpenCVExample::_process(float delta)
     {
         if (cap->read(frame))
         {
-            output = own_opencv_code_object->process_image(frame, show_processed); // get output from our OpenCV code
+            output = own_opencv_code_object->process_image(frame, show_processed, draw_debug); // get output from our OpenCV code
             gd_frame = cvMat_to_Image(); // convert to Godot Image
             emit_signal("frame_updated", this, gd_frame);
             emit_marker_signal();
@@ -120,11 +123,25 @@ void GDOpenCVExample::set_show_processed(bool do_process)
     show_processed = do_process;
 }
 
-
 // get show_processed....not used
 bool GDOpenCVExample::get_show_processed()
 {
     return show_processed;
+}
+
+
+// set draw_debug (overlay border/ID/axes). Independen dari deteksi.
+void GDOpenCVExample::set_draw_debug(bool enable)
+{
+    draw_debug = enable;
+    if (own_opencv_code_object != NULL)
+        own_opencv_code_object->set_draw_debug(enable);
+}
+
+// get draw_debug
+bool GDOpenCVExample::get_draw_debug()
+{
+    return draw_debug;
 }
 
 

@@ -15,6 +15,7 @@ class OpenCVProcessing
         cv::Mat camera_matrix;
         cv::Mat dist_coeffs;
         float marker_length_m = 0.05f; // sisi marker fisik (meter), default 5 cm
+        bool draw_debug = false;      // true = gambar overlay border/ID/axes (untuk debug visual)
         int calib_width = 0;
         int calib_height = 0;
 
@@ -30,8 +31,11 @@ class OpenCVProcessing
         ~OpenCVProcessing();
 
         void set_marker_length(float meters);
+        void set_draw_debug(bool draw);
 
-        cv::Mat process_image(cv::Mat input, bool do_process);
+        // do_detect: deteksi marker + estimasi pose (selalu dijalankan bila true)
+        // draw_debug: gambar overlay border/ID/sumbu pada output (independen dari deteksi)
+        cv::Mat process_image(cv::Mat input, bool do_detect, bool draw_debug);
 };
 
 #endif

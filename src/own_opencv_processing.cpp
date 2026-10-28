@@ -29,6 +29,14 @@ OpenCVProcessing::OpenCVProcessing()
     );
 }
 
+// Atur apakah overlay (border/ID/axes) digambar pada frame output.
+// Deteksi tetap berjalan bila do_detect=true. Dipisahkan agar model 3D
+// bisa muncul tanpa overlay visual mengganggu di produksi.
+void OpenCVProcessing::set_draw_debug(bool draw)
+{
+    draw_debug = draw;
+}
+
 // Matriks kamera perkiraan, mengikuti resolusi aktual frame.
 // fx = fy = 0.9 * width, cx = width/2, cy = height/2.
 void OpenCVProcessing::ensure_camera_matrix(int width, int height)
@@ -70,9 +78,12 @@ OpenCVProcessing::~OpenCVProcessing()
 }
 
 // Fungsi pemrosesan gambar
+// do_detect: apakah marker dideteksi + pose diestimasi (selalu dijalankan bila true)
+// draw_debug: apakah overlay border/ID/axes digambar pada output (hanya untuk visual)
 cv::Mat OpenCVProcessing::process_image(
     cv::Mat input,
-    bool do_process
+    bool do_detect,
+    bool draw_debug
 )
 {
     // Pastikan input gambar valid.
@@ -100,17 +111,18 @@ cv::Mat OpenCVProcessing::process_image(
     static bool processing_started = false;
     static bool previous_marker_found = false;
 
-    // Jika pemrosesan dinonaktifkan, deteksi tidak dilakukan.
-    if (!do_process)
+    // Jika deteksi dimatikan, bersihkan cache pose + kembalikan frame mentah
+    // (tanpa overlay). draw_debug tetap dihormati pada frame berikutnya.
+    if (!do_detect)
     {
         if (!warned_processing_disabled)
         {
             godot::Godot::print(
-                "[AR] PEMROSESAN NONAKTIF: do_process = false."
+                "[AR] PEMROSESAN NONAKTIF: do_detect = false."
             );
 
             godot::Godot::print(
-                "[AR] Periksa nilai do_process di GDScript."
+                "[AR] Periksa nilai do_detect (show_processed) di GDScript."
             );
 
             warned_processing_disabled = true;
@@ -181,25 +193,30 @@ cv::Mat OpenCVProcessing::process_image(
         last_rvecs = rvecs;
         last_tvecs = tvecs;
 
-        // Gambar garis batas dan ID marker pada output.
-        cv::aruco::drawDetectedMarkers(
-            output,
-            markerCorners,
-            markerIds
-        );
-
-        // Gambar sumbu pose 3D (bukti visual estimasi pose jalan).
-        // OpenCV 4.6: pakai cv::drawFrameAxes (aruco::drawAxis belum ada).
-        for (size_t i = 0; i < markerIds.size(); ++i)
+        // Gambar overlay (border + ID + sumbu) HANYA bila diminta (debug visual).
+        // Deteksi + pose tetap dihitung di atas — tidak tergantung draw_debug.
+        if (draw_debug)
         {
-            cv::drawFrameAxes(
+            // Gambar garis batas dan ID marker pada output.
+            cv::aruco::drawDetectedMarkers(
                 output,
-                camera_matrix,
-                dist_coeffs,
-                rvecs[i],
-                tvecs[i],
-                marker_length_m * 0.5f
+                markerCorners,
+                markerIds
             );
+
+            // Gambar sumbu pose 3D (bukti visual estimasi pose jalan).
+            // OpenCV 4.6: pakai cv::drawFrameAxes (aruco::drawAxis belum ada).
+            for (size_t i = 0; i < markerIds.size(); ++i)
+            {
+                cv::drawFrameAxes(
+                    output,
+                    camera_matrix,
+                    dist_coeffs,
+                    rvecs[i],
+                    tvecs[i],
+                    marker_length_m * 0.5f
+                );
+            }
         }
 
         // Cetak ID hanya ketika marker baru terdeteksi

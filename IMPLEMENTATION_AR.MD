@@ -35,7 +35,7 @@ Dengan node, scene non-AR sama sekali tidak tersentuh — sesuai keinginanmu.
 
 Konfigurasi default di `ARSession` (bisa diubah dari Inspector):
 `camera_id=0`, `640x480`, `show_processed=true`, `marker_length=0.05`,
-`auto_start=true`.
+`auto_start=true`, `debug_overlay=false`.
 
 ## 2. Sinyal & API yang disediakan `ARSession`
 
@@ -47,7 +47,7 @@ Konfigurasi default di `ARSession` (bisa diubah dari Inspector):
 | `status_changed` | `(text: String)` | Perubahan status internal AR |
 
 Fungsi penting: `start()` / `stop()` / `is_running()`,
-`set_camera_id(n)`, `set_show_processed(v)`, `set_marker_length(m)`,
+`set_camera_id(n)`, `set_show_processed(v)`, `set_debug_overlay(v)`, `set_marker_length(m)`,
 `get_video_texture()`, `has_marker(id)`, `get_marker_index(id)`,
 `get_marker_position(id)` (sudah konversi sumbu OpenCV→Godot),
 `get_marker_basis(id)`, `get_marker_tilt_deg(id)`,
@@ -226,6 +226,8 @@ serta entri "Add Node → ARSession" tersedia tanpa menulis path file.
 | `error 146: signature doesn't match the parent` | Nama fungsi bentrok method bawaan (`get_index`, `get_name`, …) | Ganti nama, mis. `get_marker_index()` |
 | Marker tak memunculkan apa pun | `marker_map` kosong / ID salah / `fallback_cube` off | Isi `marker_map` (atau `add_marker(7, load(...))`); coba `fallback_cube=true` |
 | Layar hitam, tanpa log `[AR]` | Sesi belum jalan / `.so` lama | `auto_start=true`; cek `gd_opencv.gdns`, rebuild `.so`, restart editor |
+| `show_processed=false` | `show_processed=false` | Set `show_processed=true` di node ARSession |
+| Border persegi / ID / sumbu XYZ mengganggu tampilan | Semua overlay OpenCV (`drawDetectedMarkers` + `drawFrameAxes`) selalu digambar bersama deteksi | Set `debug_overlay=false` di node ARSession (default). Deteksi tetap aktif, hanya overlay yang dimatikan |
 | `PEMROSESAN NONAKTIF` | `show_processed=false` | Set `show_processed=true` di node ARSession |
 | Kubus meleset dari marker | FOV kamera beda dgn fx OpenCV | `ARSession` menyetel FOV otomatis (~45° utk 640×480); jangan timpa manual |
 | Kubus kedip | Deteksi kedip (glare layar HP) | `hold_frames=5` (default ARSpawner) |

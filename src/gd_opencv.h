@@ -21,6 +21,7 @@ namespace godot
             int width;
             int height;
             bool show_processed;
+            bool draw_debug;        // overlay (border/ID/axes) — independen dari deteksi
             float marker_length;
 
             cv::VideoCapture *cap;
@@ -51,6 +52,11 @@ namespace godot
             // to select processed/unprocessed image for display
             void set_show_processed(bool do_process);
             bool get_show_processed();
+
+            // Overlay visual (border/ID/axes). Dapat dimatikan agar frame bersih
+            // sambil deteksi + pose tetap aktif.
+            void set_draw_debug(bool enable);
+            bool get_draw_debug();
 
             // marker fisik (meter) untuk estimasi pose
             void set_marker_length(float meters);

@@ -8,9 +8,12 @@ var _tex: ImageTexture
 func _ready() -> void:
 	_tex = ImageTexture.new()
 
-	# Paksa deteksi aktif walau properti show_processed di .tscn lupa dicentang (G1).
-#	if has_node("Sprite"):
-#		$Sprite.show_processed = true
+	# Paksa deteksi aktif + overlay visual (border/ID/axes) walau properti
+	# di .tscn lupa dicentang (G1). Main2D adalah adegan DEBUG 2D, jadi
+	# overlay (draw_debug) disengaja dinyalakan agar kotak/sumbu terlihat.
+	if has_node("Sprite"):
+		$Sprite.show_processed = true
+		$Sprite.draw_debug = true
 
 	_set_status("Menunggu marker DICT_4X4_50...")
 
