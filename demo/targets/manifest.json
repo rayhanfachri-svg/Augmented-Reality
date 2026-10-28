@@ -1,13 +1,24 @@
 {
 	"targets": [
 		{
+			"name": "Shovel",
+			"image": "res://targets/Shovel.png",
+			"image_path": "res://targets/Shovel.png",
+			"width_m": 0.2,
+			"keypoints": 525,
+			"scene": "",
+			"scene_path": "",
+			"bundled": true
+		},
+		{
 			"name": "contoh_poster",
 			"image": "res://targets/contoh_poster.png",
 			"image_path": "res://targets/contoh_poster.png",
-			"width_m": 0.20,
+			"width_m": 0.2,
 			"keypoints": 0,
 			"scene": "res://models/ContohKubus.tscn",
-			"scene_path": "res://models/ContohKubus.tscn"
+			"scene_path": "res://models/ContohKubus.tscn",
+			"bundled": true
 		}
 	]
 }

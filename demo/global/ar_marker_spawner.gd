@@ -37,8 +37,15 @@ var _instances := {}  # id -> Spatial
 var _missed := {}
 var _spawned := {}
 
+# Modifikasi tambahan sementara (manusia)
+# Penyebab: Terdapat bug pada export var Dictionary
+export(Array, int) var marker_ids_list: Array = []  # ID ArUco, mis. [0, 1, 2]
+export(Array, PackedScene) var marker_scenes: Array = []  # scene, urutan sama dgn marker_ids_list
+
 
 func _ready() -> void:
+	force_create_dict()
+	
 	_find_or_create_session()
 	if _session == null:
 		# Sesi mungkin belum masuk tree (urutan _ready terbalik di try1.tscn:
@@ -46,6 +53,16 @@ func _ready() -> void:
 		call_deferred("_deferred_bind")
 		return
 	_bind_session()
+
+func force_create_dict()-> void:
+	# Membuat dictionary secara paksa karena masalah di inspector
+	marker_map.clear()
+	var n: int = int(min(marker_ids_list.size(), marker_scenes.size()))
+	for i in range(n):
+		if marker_scenes[i] is PackedScene:
+			marker_map[int(marker_ids_list[i])] = marker_scenes[i]
+	if marker_ids_list.size() != marker_scenes.size():
+		push_warning("[ARSpawner] Jumlah marker_ids_list dan marker_scenes tidak sama.")
 
 
 func _deferred_bind() -> void:

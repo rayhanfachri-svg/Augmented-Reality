@@ -19,6 +19,7 @@ status_label_path = NodePath("../CanvasLayer/Control/StatusLabel")
 
 [node name="ARImageSpawner" type="Spatial" parent="."]
 script = ExtResource( 2 )
+session_node = NodePath("../ARImageSession")
 smooth_factor = 6.8
 hold_frames = 8
 max_jump = 0.2

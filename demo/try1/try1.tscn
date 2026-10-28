@@ -1,7 +1,12 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://global/ar_marker_spawner.gd" type="Script" id=1]
 [ext_resource path="res://global/ar.gd" type="Script" id=2]
+[ext_resource path="res://models/Sekop.tscn" type="PackedScene" id=3]
+[ext_resource path="res://models/Lilin.tscn" type="PackedScene" id=4]
+[ext_resource path="res://models/Labu.tscn" type="PackedScene" id=5]
+[ext_resource path="res://models/Nisan.tscn" type="PackedScene" id=6]
+[ext_resource path="res://models/PetiBatu.tscn" type="PackedScene" id=7]
 
 [node name="try1" type="Spatial"]
 
@@ -10,4 +15,9 @@ script = ExtResource( 2 )
 
 [node name="ARMarkerSpawner" type="Spatial" parent="."]
 script = ExtResource( 1 )
+auto_create_session = false
 session_node = NodePath("../ARSession")
+fallback_cube = false
+debug_mode = false
+marker_ids_list = [ 0, 1, 2, 3, 4 ]
+marker_scenes = [ ExtResource( 5 ), ExtResource( 4 ), ExtResource( 6 ), ExtResource( 7 ), ExtResource( 3 ) ]
