@@ -160,8 +160,8 @@
 
 ### Tahap 8 --- Export dan uji APK
 
--   [ ] **[Manusia]** Pastikan Godot 3.6.x editor + export template terpasang ✅ versi
--   [ ] **[Manusia]** Build `release` selesai (lihat Tahap 6)
+-   [x] **[Manusia]** Pastikan Godot 3.6.x editor + export template terpasang ✅ versi
+-   [ ] **[Manusia]** Build `release` selesai (lihat Tahap 6) [catatan manusia: masih ditargetkan membuat apk debug]
 -   [ ] **[Manusia]** Export APK dari editor Godot
     -   `Project → Export → Android → Export Project`
 -   [ ] **[Manusia]** Instal APK ke perangkat: `adb install -r "Godot CPP OpenCV.apk"`

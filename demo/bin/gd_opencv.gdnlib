@@ -10,8 +10,6 @@ reloadable=false
 X11.64="res://bin/x11/libgdopencvexample.so"
 Windows.64="res://bin/win64/libgdopencvexample.dll"
 OSX.64="res://bin/osx/libgdopencvexample.dylib"
-# Android: build cross-compile via  scons platform=android android_abi=arm64-v8a
-# (atau armeabi-v7a). Hasilnya otomatis masuk ke folder ini; lihat IMPLEMENTATION_EXPORD.MD.
 Android.arm64-v8a="res://bin/android/arm64-v8a/libgdopencvexample.so"
 
 [dependencies]
@@ -19,11 +17,4 @@ Android.arm64-v8a="res://bin/android/arm64-v8a/libgdopencvexample.so"
 X11.64=[]
 Windows.64=[]
 OSX.64=[]
-# Android: library GDNative DI-LINK STATIS terhadap OpenCV (lihat cabang `android`
-# di SConstruct), sehingga TIDAK butuh libopencv_*.so terpisah di dalam APK —
-# inilah sebabnya Android.arm64-v8a di bawah tetap kosong [].
-# Bila Anda beralih ke dynamic linking, copy sdk/native/libs/<abi>/libopencv_*.so
-# ke res://bin/android/<abi>/ dan enumlasemukan di sini, misal:
-# Android.arm64-v8a=["res://bin/android/arm64-v8a/libopencv_core.so",
-#                    "res://bin/android/arm64-v8a/libopencv_imgproc.so", ...]
 Android.arm64-v8a=[]
