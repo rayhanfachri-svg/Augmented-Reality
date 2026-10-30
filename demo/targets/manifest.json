@@ -6,8 +6,8 @@
 			"image_path": "res://targets/Shovel.png",
 			"width_m": 0.2,
 			"keypoints": 525,
-			"scene": "",
-			"scene_path": "",
+			"scene": "res://models/Sekop.tscn",
+			"scene_path": "res://models/Sekop.tscn",
 			"bundled": true
 		},
 		{
@@ -18,6 +18,16 @@
 			"keypoints": 0,
 			"scene": "res://models/ContohKubus.tscn",
 			"scene_path": "res://models/ContohKubus.tscn",
+			"bundled": true
+		},
+		{
+			"name": "images",
+			"image": "res://targets/images.png",
+			"image_path": "res://targets/images.png",
+			"width_m": 0.2,
+			"keypoints": 750,
+			"scene": "res://models/Sekop.tscn",
+			"scene_path": "res://models/Sekop.tscn",
 			"bundled": true
 		}
 	]

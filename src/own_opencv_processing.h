@@ -2,15 +2,32 @@
 #define OPENCVPROCESSING_H
 
 #include <opencv2/imgproc.hpp>
-#include <opencv2/aruco.hpp>
+#include <opencv2/opencv.hpp>
 #include <vector>
+
+// OpenCV 4.7.0+ and 5.x: ArUco moved to objdetect module with class-based API.
+// OpenCV 4.6.x and earlier: ArUco is a standalone module with Ptr-based API.
+// This macro selects the correct API at compile time.
+#if CV_MAJOR_VERSION >= 5 || (CV_MAJOR_VERSION == 4 && CV_MINOR_VERSION >= 7)
+    #include <opencv2/objdetect/aruco_detector.hpp>
+#else
+    #include <opencv2/aruco.hpp>
+#endif
 
 // Class untuk pemrosesan ArUco Marker menggunakan OpenCV
 class OpenCVProcessing
 {
     private:
+#if CV_MAJOR_VERSION >= 5 || (CV_MAJOR_VERSION == 4 && CV_MINOR_VERSION >= 7)
+        // New API (OpenCV 4.7.0+ / 5.x): value types + ArucoDetector class
+        cv::aruco::Dictionary dictionary;
+        cv::aruco::DetectorParameters detector_params;
+        cv::aruco::ArucoDetector aruco_detector;
+#else
+        // Old API (OpenCV 4.6.x and earlier): Ptr-based wrapper
         cv::Ptr<cv::aruco::Dictionary> dictionary;
         cv::Ptr<cv::aruco::DetectorParameters> detector_params;
+#endif
 
         cv::Mat camera_matrix;
         cv::Mat dist_coeffs;

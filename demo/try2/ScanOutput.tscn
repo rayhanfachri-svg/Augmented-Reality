@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://global/ar_image_library.gd" type="Script" id=1]
 [ext_resource path="res://global/ar_image_spawner.gd" type="Script" id=2]
 [ext_resource path="res://global/ar_image_session.gd" type="Script" id=3]
+[ext_resource path="res://try2/DeleteIt.gd" type="Script" id=4]
 
 [node name="ScanOutput" type="Spatial"]
 
@@ -35,3 +36,6 @@ anchor_bottom = 1.0
 margin_right = 40.0
 margin_bottom = 14.0
 text = "Status"
+
+[node name="DeleteIt" type="Node" parent="."]
+script = ExtResource( 4 )

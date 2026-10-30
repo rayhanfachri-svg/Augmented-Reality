@@ -2,21 +2,39 @@
 #include "own_opencv_processing.h"
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/aruco.hpp>
 
 #include <Godot.hpp>
 
 #include <string>
 
+// OpenCV 4.7.0+ / 5.x: ArUco API changed to class-based (ArucoDetector).
+// OpenCV 4.6.x: uses old Ptr-based free-function API.
+// estimatePoseSingleMarkers was removed in 4.7.0+; replaced by manual solvePnP.
+
 // Constructor
 OpenCVProcessing::OpenCVProcessing()
 {
+#if CV_MAJOR_VERSION >= 5 || (CV_MAJOR_VERSION == 4 && CV_MINOR_VERSION >= 7)
+    // --- New API (OpenCV 4.7.0+ / 5.x) ---
+    dictionary =
+        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+
+    // DetectorParameters is now a struct (not a Ptr-wrapped class);
+    // use default constructor instead of the removed ::create().
+    detector_params = cv::aruco::DetectorParameters();
+    detector_params.cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+
+    // Build the ArucoDetector once and reuse it every frame.
+    aruco_detector = cv::aruco::ArucoDetector(dictionary, detector_params);
+#else
+    // --- Old API (OpenCV 4.6.x and earlier) ---
     dictionary =
         cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
 
     // Cache sekali saja (jangan create() tiap frame).
     detector_params = cv::aruco::DetectorParameters::create();
     detector_params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+#endif
 
     dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
 
@@ -155,9 +173,17 @@ cv::Mat OpenCVProcessing::process_image(
     std::vector<std::vector<cv::Point2f>> markerCorners;
     std::vector<std::vector<cv::Point2f>> rejectedCandidates;
 
+#if CV_MAJOR_VERSION >= 5 || (CV_MAJOR_VERSION == 4 && CV_MINOR_VERSION >= 7)
+    // --- New API (OpenCV 4.7.0+ / 5.x): detect via ArucoDetector member ---
+    aruco_detector.detectMarkers(
+        input,
+        markerCorners,
+        markerIds,
+        rejectedCandidates
+    );
+#else
+    // --- Old API (OpenCV 4.6.x): free-function detectMarkers ---
     cv::Ptr<cv::aruco::DetectorParameters> parameters = detector_params;
-
-    // Deteksi ArUco Marker.
     cv::aruco::detectMarkers(
         input,
         dictionary,
@@ -166,6 +192,7 @@ cv::Mat OpenCVProcessing::process_image(
         parameters,
         rejectedCandidates
     );
+#endif
 
     // Periksa apakah ada marker yang terdeteksi.
     const bool marker_found = !markerIds.empty();
@@ -181,6 +208,34 @@ cv::Mat OpenCVProcessing::process_image(
         ensure_camera_matrix(input.cols, input.rows);
 
         std::vector<cv::Vec3d> rvecs, tvecs;
+#if CV_MAJOR_VERSION >= 5 || (CV_MAJOR_VERSION == 4 && CV_MINOR_VERSION >= 7)
+        // OpenCV 4.7.0+ / 5.x: cv::aruco::estimatePoseSingleMarkers was REMOVED.
+        // Replicate its behaviour with cv::solvePnP per detected marker:
+        //   - build 3D object points for a square marker (centered at origin, Z=0)
+        //   - call solvePnP for each marker using its 4 detected 2D corners
+        {
+            const float halfSize = marker_length_m * 0.5f;
+            std::vector<cv::Point3f> objPts;
+            objPts.reserve(4);
+            objPts.push_back(cv::Point3f(-halfSize,  halfSize, 0));  // top-left
+            objPts.push_back(cv::Point3f( halfSize,  halfSize, 0));  // top-right
+            objPts.push_back(cv::Point3f( halfSize, -halfSize, 0));  // bottom-right
+            objPts.push_back(cv::Point3f(-halfSize, -halfSize, 0));  // bottom-left
+
+            rvecs.reserve(markerCorners.size());
+            tvecs.reserve(markerCorners.size());
+
+            for (size_t i = 0; i < markerCorners.size(); ++i)
+            {
+                cv::Vec3d rvec, tvec;
+                cv::solvePnP(objPts, markerCorners[i],
+                             camera_matrix, dist_coeffs, rvec, tvec);
+                rvecs.push_back(rvec);
+                tvecs.push_back(tvec);
+            }
+        }
+#else
+        // OpenCV 4.6.x: estimatePoseSingleMarkers free function still available
         cv::aruco::estimatePoseSingleMarkers(
             markerCorners,
             marker_length_m,
@@ -189,6 +244,7 @@ cv::Mat OpenCVProcessing::process_image(
             rvecs,
             tvecs
         );
+#endif
 
         last_rvecs = rvecs;
         last_tvecs = tvecs;

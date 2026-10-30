@@ -8,9 +8,12 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource( 2 )
 
-[node name="GridContainer" type="GridContainer" parent="."]
+[node name="Grid" type="GridContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
+margin_top = 151.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
 columns = 2
 
 [node name="BtnExport" type="Button" parent="."]
@@ -31,8 +34,6 @@ margin_top = 213.0
 margin_right = 470.0
 margin_bottom = 343.0
 rect_min_size = Vector2( 150, 52.5 )
-root_subfolder = "res://models/"
-filters = PoolStringArray( ".tscn" )
 
 [node name="ARImageLibrary" type="Node" parent="."]
 script = ExtResource( 1 )
