@@ -1,0 +1,4 @@
+# Tempatkan di sini libgdopencvexample.so (arm64-v8a) yang di-build lewat:
+#   scons platform=android android_abi=arm64-v8a target=release -j$(nproc)
+# OpenCV juga di-link statis ke .so ini, jadi tidak perlu libopencv_*.so ekstra.
+# File ini hanya menandai folder agar struktur res:///.gdndlib tetap ada sebelum build.
