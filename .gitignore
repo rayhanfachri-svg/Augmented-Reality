@@ -1,5 +1,6 @@
 # Build GDNative (hasil scons — bisa dibangun ulang)
 demo/bin/x11/*.so
+demo/bin/android/arm64-v8a/*.so
 demo/bin/win64/*.dll
 demo/bin/osx/*.dylib
 *.os
