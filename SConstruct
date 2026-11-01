@@ -194,7 +194,7 @@ elif env['platform'] == "android":
     # penuh, sehingga semua simbol resolve (bukan -lname yang bisa skip member).
     ocv_paths = [staticlib_dir + '/' + n + '.a' for n in ocv_static] \
               + [thirdparty_dir + '/' + n + '.a' for n in ocv_third]
-    env.Append(LIBS=['log', 'android'])
+    env.Append(LIBS=['mediandk', 'log', 'android'])
     env.Append(LINKFLAGS=['-Wl,--whole-archive'] + ocv_paths + ['-Wl,--no-whole-archive'])
     sysroot = toolchain + '../sysroot'
     ocv_include = ocv_native + '/jni/include'

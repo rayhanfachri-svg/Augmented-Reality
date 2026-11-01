@@ -16,6 +16,7 @@ signal marker_lost
 signal status_changed(text)
 
 const GDNS_PATH := "res://bin/gd_opencv.gdns"
+const CAMERA_PERMISSION := "android.permission.CAMERA"
 
 # Konfigurasi — samakan dgn kebutuhan scene (cm: marker 5 cm = 0.05).
 export var camera_id: int = 0
@@ -43,6 +44,7 @@ var last_translations: Array = []
 var last_rotations: Array = []
 var last_seen_msec: int = 0
 var _initialized: bool = false  # true bila _video_tex + kamera sudah disiapkan
+var _first_frame_logged: bool = false  # true setelah frame pertama dari kamera diterima
 
 var _worker: Node = null  # GDOpenCVExample (Sprite) buatan C++
 var _was_empty: bool = true
@@ -53,6 +55,7 @@ var _video_quad: MeshInstance
 
 func _ready() -> void:
 	_ensure_initialized()
+	# Izin kamera Android ditangani di start() (meminta izin + menunggu hasilnya).
 	if auto_start:
 		start()
 
@@ -155,9 +158,46 @@ func get_video_quad() -> MeshInstance:
 	return _video_quad
 
 
+func _has_camera_permission() -> bool:
+	if OS.get_name() != "Android":
+		return true
+	return CAMERA_PERMISSION in OS.get_granted_permissions()
+
+
+func _on_permission_result(permission: String, granted: bool) -> void:
+	if not ("CAMERA" in permission):
+		return
+	print("[AR] Hasil izin kamera: ", "diberikan" if granted else "ditolak")
+	if granted:
+		start()
+	else:
+		_set_status("Izin kamera ditolak. AR tidak bisa dijalankan.")
+
+
+func _check_first_frame() -> void:
+	if is_running() and not _first_frame_logged:
+		print("[AR] PERINGATAN: belum ada frame 5 detik setelah start (kamera mungkin gagal dibuka).")
+		_set_status("Belum ada frame dari kamera.")
+
+
+
 # --- Kontrol kamera -------------------------------------------------------
 func start() -> bool:
 	_ensure_initialized()
+	
+	# Android: kamera hanya boleh dibuka bila izin CAMERA sudah diberikan.
+	# Dicek di sini (bukan hanya di _ready) karena spawner bisa memanggil start()
+	# sebelum _ready node ini berjalan.
+	if not _has_camera_permission():
+		if not is_inside_tree():
+			return false
+		if not get_tree().is_connected("on_request_permissions_result", self, "_on_permission_result"):
+			get_tree().connect("on_request_permissions_result", self, "_on_permission_result")
+		print("[AR] Meminta izin kamera...")
+		OS.request_permission(CAMERA_PERMISSION)
+		_set_status("Menunggu izin kamera...")
+		return false
+
 	if _worker != null and is_instance_valid(_worker):
 		return true
 	if not ResourceLoader.exists(GDNS_PATH):
@@ -178,6 +218,7 @@ func start() -> bool:
 	if not gdns.can_instance():
 		_set_status("GDNative gagal ter-init (cek .so / undefined symbol): " + GDNS_PATH)
 		return false
+	print("[AR] Membuat worker GDNative (camera_id=%d)..." % camera_id)
 	_worker = gdns.new()
 	if _worker == null:
 		_set_status("Gagal membuat instance worker GDNative.")
@@ -201,6 +242,8 @@ func start() -> bool:
 		return false
 
 	_set_status("AR aktif. Menunggu marker DICT_4X4_50...")
+	_first_frame_logged = false
+	get_tree().create_timer(5.0).connect("timeout", self, "_check_first_frame")
 	return true
 
 
@@ -258,6 +301,9 @@ func _apply_config() -> void:
 
 # --- Sinyal dari worker -> cache + re-emit --------------------------------
 func _on_worker_frame(_node, image) -> void:
+	if not _first_frame_logged and image != null:
+		_first_frame_logged = true
+		print("[AR] Frame pertama diterima dari kamera.")
 	if _video_tex == null:
 		_video_tex = ImageTexture.new()
 	if image != null:
