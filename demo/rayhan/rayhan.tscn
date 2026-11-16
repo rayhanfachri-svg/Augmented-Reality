@@ -1,0 +1,24 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://global/ar_marker_spawner.gd" type="Script" id=1]
+[ext_resource path="res://global/ar.gd" type="Script" id=2]
+[ext_resource path="res://rayhan/AR2.tscn" type="PackedScene" id=3]
+[ext_resource path="res://rayhan/AR.tscn" type="PackedScene" id=4]
+[ext_resource path="res://rayhan/AR3.tscn" type="PackedScene" id=5]
+[ext_resource path="res://rayhan/AR5.tscn" type="PackedScene" id=6]
+[ext_resource path="res://rayhan/AR4.tscn" type="PackedScene" id=7]
+[ext_resource path="res://rayhan/AR6.tscn" type="PackedScene" id=8]
+
+[node name="Spatial" type="Spatial"]
+
+[node name="ARSession" type="Node" parent="."]
+script = ExtResource( 2 )
+
+[node name="ARMarkerSpawner" type="Spatial" parent="."]
+script = ExtResource( 1 )
+marker_ids_list = [ 0, 1, 2, 3, 4, 5 ]
+marker_scenes = [ ExtResource( 4 ), ExtResource( 3 ), ExtResource( 5 ), ExtResource( 7 ), ExtResource( 6 ), ExtResource( 8 ) ]
+
+[node name="DirectionalLight" type="DirectionalLight" parent="."]
+transform = Transform( 1, 0, 0, 0, -1, 8.74228e-08, 0, -8.74228e-08, -1, 0, 7, 0 )
+light_energy = 0.5

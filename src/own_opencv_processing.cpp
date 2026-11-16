@@ -38,6 +38,18 @@ OpenCVProcessing::OpenCVProcessing()
 
     dist_coeffs = cv::Mat::zeros(5, 1, CV_64F);
 
+    // --- LOG: Cek backend kamera OpenCV di ponsel ---
+    godot::Godot::print("[AR] Checking OpenCV camera backends:");
+    for (auto b : cv::videoio_registry::getCameraBackends())
+    {
+        std::string name = cv::videoio_registry::getBackendName(b);
+        if (!name.empty())
+        {
+            godot::Godot::print(String("[AR] backend kamera OpenCV: ") + String(name.c_str()));
+        }
+    }
+    // --- AKHIR LOG ---
+
     godot::Godot::print(
         "[AR] OpenCVProcessing berhasil dibuat."
     );
